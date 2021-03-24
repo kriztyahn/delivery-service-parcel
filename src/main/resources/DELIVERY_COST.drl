@@ -1,0 +1,63 @@
+import com.mynt.deliveryparcelservice.model.Parcel
+import java.math.BigDecimal;
+
+global com.mynt.deliveryparcelservice.service.ParcelService parcelService;
+global com.mynt.deliveryparcelservice.model.Parcel parcel;
+global java.math.BigDecimal multiplier;
+
+    dialect "java"
+
+rule "Calculate Delivery Cost - Reject"
+    salience 50
+    activation-group "x"
+    when
+        parcelIntance:Parcel(weight > 50)
+    then
+        parcel.setRejected(true);
+        parcel.setDeliveryCost(BigDecimal.ZERO);
+end
+
+rule "Calculate Delivery Cost - Heavy Parcel"
+    salience 40
+    activation-group "x"
+    when
+        parcelInstance:Parcel(weight>10 && weight<=50)
+    then
+        parcel.setRejected(false);
+        multiplier = new BigDecimal(20);
+        parcel.setDeliveryCost(multiplier.multiply(new BigDecimal(parcel.getWeight())));
+end
+
+rule "Calculate Delivery Cost - Small Parcel"
+    salience 40
+    activation-group "x"
+    when
+        parcelInstance:Parcel(parcel.weight<=50 && parcelService.getVolume(parcel) < 1499);
+    then
+        parcel.setRejected(false);
+        multiplier = new BigDecimal(0.03);
+        parcel.setDeliveryCost(multiplier.multiply(new BigDecimal(parcelService.getVolume(parcel))));
+end
+
+rule "Calculate Delivery Cost - Medium Parcel"
+    salience 40
+    activation-group "x"
+    when
+        parcelInstance:Parcel(parcel.weight<=50 && parcelService.getVolume(parcel) >= 1500 && parcelService.getVolume(parcel) < 2500);
+    then
+        parcel.setRejected(false);
+        multiplier = new BigDecimal(0.04);
+        parcel.setDeliveryCost(multiplier.multiply(new BigDecimal(parcelService.getVolume(parcel))));
+end
+
+rule "Calculate Delivery Cost - Large Parcel"
+    salience 40
+    activation-group "x"
+    when
+        parcelInstance:Parcel(parcel.weight<=10 && parcelService.getVolume(parcel) >= 2500);
+    then
+        parcel.setRejected(false);
+        multiplier = new BigDecimal(0.05);
+        parcel.setDeliveryCost(multiplier.multiply(new BigDecimal(parcelService.getVolume(parcel))));
+end
+
